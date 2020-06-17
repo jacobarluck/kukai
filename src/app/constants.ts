@@ -20,7 +20,7 @@ export class Constants {
                 url: 'https://conseil-prod.cryptonomic-infra.tech',
                 apiKey: 'klassare'
             },
-            NODE_URL: 'https://mainnet.tezos.org.ua',
+            NODE_URL: 'https://mainnet-tezos.giganode.io',
             BLOCK_EXPLORER_URL: 'https://tezblock.io'
         };
     }
@@ -32,7 +32,7 @@ export class Constants {
                 url: 'https://conseil-staging2.cryptonomic-infra.tech',
                 apiKey: 'klassare'
             },
-            NODE_URL: 'https://carthagenet.tezos.org.ua',
+            NODE_URL: 'https://testnet-tezos.giganode.io/',
             BLOCK_EXPLORER_URL: 'https://carthagenet.tezblock.io'
         };
     }
