@@ -27,6 +27,7 @@ const zeroTxParams: DefaultTransactionParams = {
   fee: 0,
   burn: 0
 };
+
 @Component({
   selector: 'app-send',
   templateUrl: './send.component.html',
@@ -40,6 +41,7 @@ export class SendComponent implements OnInit {
   sendMax = false;
   /* old variables */
   @Input() activeAccount: Account;
+  @Input() customSend: string;
   @ViewChild('amountInput') amountInputView: ElementRef;
   CONSTANTS = new Constants();
   defaultTransactionParams: DefaultTransactionParams = zeroTxParams;
@@ -101,6 +103,7 @@ export class SendComponent implements OnInit {
   /* Modal 2 */
   openModal() {
     // hide body scrollbar
+    console.log(JSON.stringify(this.customSend));
     const scrollBarWidth = window.innerWidth - document.body.offsetWidth;
     document.body.style.marginRight = scrollBarWidth.toString();
     document.body.style.overflow = 'hidden';
@@ -228,7 +231,7 @@ export class SendComponent implements OnInit {
     }
   }
   maxToSend(account: Account): string {
-    if (account && (account instanceof ImplicitAccount)) {
+    if (account && (account instanceof ImplicitAccount) && !this.customSend) {
       let accountBalance = Big(account.balanceXTZ).div(1000000);
       accountBalance = accountBalance.minus(this.fee ? Number(this.fee) : this.defaultTransactionParams.fee);
       if (!this.isMultipleDestinations) {
@@ -239,7 +242,14 @@ export class SendComponent implements OnInit {
       accountBalance = accountBalance.minus(0.000001); // dust
       return accountBalance.toString();
     } else {
-      return Big(account.balanceXTZ).div(1000000).toString();
+      if (this.customSend) {
+        let max = 0;
+        if (account instanceof ImplicitAccount) {
+          return Big(account.getAssetBalance(this.customSend)).div(1000000).toString(); 
+        }
+      } else {
+        return Big(account.balanceXTZ).div(1000000).toString();
+      }
     }
   }
   prepTransactions(finalCheck = false): boolean {
@@ -277,7 +287,7 @@ export class SendComponent implements OnInit {
     }
     if (!amount) { amount = '0'; }
     if (!fee) { fee = '0'; }
-    this.operationService.transfer(this.activeAccount.address, this.transactions, Number(fee), keys).subscribe(
+    this.operationService.transfer(this.activeAccount.address, this.transactions, Number(fee), keys, this.customSend).subscribe(
       async (ans: any) => {
         this.sendResponse = ans;
         if (ans.success === true) {
@@ -437,6 +447,13 @@ export class SendComponent implements OnInit {
       this.amount = this.totalAmount().toString();
     }
   }
+  amountChange() {
+    if (this.customSend) {
+      console.log('amount changed');
+      //this.validateReceiverAddress()
+      this.estimateFees();
+    }
+  }
   async estimateFees() {
     console.log('estimate...');
     const prevSimError = this.latestSimError;
@@ -448,7 +465,8 @@ export class SendComponent implements OnInit {
         this.prevEquiClass = equiClass;
         this.simSemaphore++; // Put lock on 'Preview and 'Send max'
         try {
-          const res: DefaultTransactionParams | null = await this.estimateService.estimate(JSON.parse(JSON.stringify(this.transactions)), this.activeAccount.address);
+          console.log('*');
+          const res: DefaultTransactionParams | null = await this.estimateService.estimate(JSON.parse(JSON.stringify(this.transactions)), this.activeAccount.address, this.customSend);
           if (res) {
             console.log(res);
             this.defaultTransactionParams = res;
@@ -476,9 +494,13 @@ export class SendComponent implements OnInit {
   // prevent redundant estimations
   equiClass(sender: string, transactions: SendData[]): string {
     let data = sender;
+    if (this.customSend) {
+      data += transactions[0].to + transactions[0].amount.toString();
+    } else {
     for (const tx of transactions) {
       data += tx.to;
     }
+  }
     return data;
   }
   batchSpace(txs = 0) {
@@ -628,4 +650,12 @@ export class SendComponent implements OnInit {
     }
     return '1.5';
   }
+  getAssetName(): string {
+    if (this.customSend) {
+      return this.CONSTANTS.NET.ASSETS[this.customSend].name;
+    } else {
+      return 'tez';
+    }
+  }
+
 }

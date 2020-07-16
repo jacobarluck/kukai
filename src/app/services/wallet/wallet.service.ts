@@ -95,7 +95,6 @@ export class WalletService {
         3
       );
     } else if (this.wallet instanceof LedgerWallet) {
-      console.log(this.wallet);
       const keyPair: KeyPair = {
         sk: null,
         pk: this.wallet.implicitAccounts[0].pk,
@@ -284,7 +283,6 @@ export class WalletService {
 
   loadStoredWallet() {
     const walletData = localStorage.getItem(this.storeKey);
-    console.log(walletData);
     if (walletData && walletData !== 'undefined') {
       const parsedWalletData = JSON.parse(walletData);
       if (parsedWalletData.type && parsedWalletData.data && parsedWalletData.localStorageId) {
@@ -334,6 +332,7 @@ export class WalletService {
     this.wallet.XTZrate = wd.XTZrate;
     this.wallet.totalBalanceUSD = wd.totalBalanceUSD;
     this.wallet.totalBalanceXTZ = wd.totalBalanceXTZ;
+    //this.wallet.assetBigMaps = wd.assetBigMaps;
     for (const implicit of wd.implicitAccounts) {
       const impAcc: ImplicitAccount = new ImplicitAccount(
         implicit.pkh,
@@ -345,6 +344,10 @@ export class WalletService {
       impAcc.delegate = implicit.delegate;
       impAcc.activitiesCounter = implicit.activitiesCounter;
       impAcc.activities = implicit.activities;
+      if (implicit.otherAssets) { // handle storage migration
+        console.log(implicit.otherAssets);
+        impAcc.otherAssets = implicit.otherAssets;
+      }
       for (const originated of implicit.originatedAccounts) {
         const origAcc = new OriginatedAccount(
           originated.address,

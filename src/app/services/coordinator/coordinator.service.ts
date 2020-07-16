@@ -28,6 +28,8 @@ export class CoordinatorService {
   shortDelayActivity = 5000; // 5s
   tzrateInterval: any;
   defaultDelayPrice = 300000; // 300s
+  assetsInterval: any;
+  assetsDelay = 20000;
   accounts: Account[];
   constructor(
     private activityService: ActivityService,
@@ -45,6 +47,7 @@ export class CoordinatorService {
         this.start(this.accounts[i].address);
       }
       this.startXTZ();
+      this.startAssetsContext();
     } else {
       console.log('no wallet found');
     }
@@ -56,6 +59,15 @@ export class CoordinatorService {
       this.tzrateInterval = setInterval(
         () => this.tzrateService.getTzrate(),
         this.defaultDelayPrice
+      );
+    }
+  }
+  startAssetsContext() {
+    if (!this.assetsInterval) {
+      this.activityService.getAssetsContext();
+      this.assetsInterval = setInterval(
+        () => this.activityService.getAssetsContext(),
+        this.assetsDelay
       );
     }
   }
@@ -190,6 +202,8 @@ export class CoordinatorService {
       }
       clearInterval(this.tzrateInterval);
       this.tzrateInterval = null;
+      clearInterval(this.assetsInterval);
+      this.assetsInterval = null;
     }
   }
   async stop(pkh) {

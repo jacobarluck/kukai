@@ -9,11 +9,13 @@ export class Wallet {
   totalBalanceXTZ: number | null;
   totalBalanceUSD: number | null;
   XTZrate: number | null;
+  assetBigMaps: {contract: string, level: string, data: any}[];
   implicitAccounts: ImplicitAccount[];
   constructor() {
     this.totalBalanceXTZ = null;
     this.totalBalanceUSD = null;
     this.XTZrate = null;
+    this.assetBigMaps = [];
     this.implicitAccounts = [];
   }
   getAccounts(): Account[] {
@@ -59,6 +61,27 @@ export class Wallet {
       }
     }
     return null;
+  }
+  getAsset(contractAddress: string): any {
+    if (this.assetBigMaps.length) {
+      for (const asset of this.assetBigMaps) {
+        if (contractAddress === asset.contract) {
+          return asset;
+        }
+      }
+    }
+    return null;
+  }
+  updateAsset(contractAddress: string, level: string, data: any) {
+    if (this.assetBigMaps.length) {
+      for (let i = 0; i < this.assetBigMaps.length; i++) {
+        if (contractAddress === this.assetBigMaps[i].contract) {
+          this.assetBigMaps[i].level = level;
+          this.assetBigMaps[i].data = data;
+          return;
+        }
+      }
+    }
   }
 }
 
@@ -144,15 +167,48 @@ export abstract class Account {
 export class ImplicitAccount extends Account {
   originatedAccounts: OriginatedAccount[];
   derivationPath?: string;
+  otherAssets: any[];
   constructor(pkh: string, pk: string, derivationPath?: string) {
     super(pkh, pk, pkh);
     this.originatedAccounts = [];
     if (derivationPath) {
       this.derivationPath = derivationPath;
     }
+    this.otherAssets = [];
   }
   isImplicit(): boolean {
     return true;
+  }
+  updateAssetBalance(contractAddress: string, balance: string) {
+    let found = false;
+    if (this.otherAssets.length) {
+      for (const [index, asset] of this.otherAssets.entries()) {
+        if (asset.contractAddress === contractAddress) {
+          found = true;
+          if (balance === '0') {
+            this.otherAssets.splice(index, 1);
+          } else if (asset.balance !== balance) {
+            asset.balance = balance;
+          }
+          break;
+        }
+      }
+    }
+    if (!found) {
+      console.log('pushing..');
+      console.log({ contractAddress, balance });
+      this.otherAssets.push( { contractAddress, balance } );
+    }
+  }
+  getAssetBalance(contractAddress: string): string {
+    if (this.otherAssets.length) {
+      for (const asset of this.otherAssets) {
+        if (asset.contractAddress === contractAddress) {
+          return asset.balance;
+        }
+      }
+    }
+    return '0';
   }
 }
 

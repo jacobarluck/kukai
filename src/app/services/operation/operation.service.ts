@@ -142,7 +142,7 @@ export class OperationService {
   /*
     Returns an observable for the transaction of tez.
   */
-  transfer(from: string, transactions: any, fee: number, keys: KeyPair): Observable<any> {
+  transfer(from: string, transactions: any, fee: number, keys: KeyPair, tokenContract: string = ''): Observable<any> {
     return this.getHeader()
       .pipe(flatMap((header: any) => {
         return this.http.get(this.nodeURL + '/chains/main/blocks/head/context/contracts/' + keys.pkh + '/counter', {})
@@ -150,14 +150,14 @@ export class OperationService {
             return this.http.get(this.nodeURL + '/chains/main/blocks/head/context/contracts/' + keys.pkh + '/manager_key', {})
               .pipe(flatMap((manager: any) => {
                 const counter: number = Number(actions);
-                const fop = this.createTransactionObject(header.hash, counter, manager, transactions, keys.pkh, keys.pk, from, fee);
+                const fop = this.createTransactionObject(header.hash, counter, manager, transactions, keys.pkh, keys.pk, from, fee, tokenContract);
                 return this.operation(fop, header, keys);
               }));
           }));
       })).pipe(catchError(err => this.errHandler(err)));
   }
   createTransactionObject(hash: string, counter: number, manager: string, transactions: any,
-    pkh: string, pk: string, from: string, fee: number): any {
+    pkh: string, pk: string, from: string, fee: number, tokenContract: string = ''): any {
     const fop: any = {
       branch: hash,
       contents: []
@@ -177,7 +177,21 @@ export class OperationService {
       const currentFee = i === transactions.length - 1 ? this.microTez.times(fee).toString() : '0';
       const gasLimit = transactions[i].gasLimit.toString();
       const storageLimit = transactions[i].storageLimit.toString();
-      if (from.slice(0, 2) === 'tz') {
+      if (tokenContract) {
+        console.log('Invoke contract: ' + tokenContract);
+        const fa12transfer = this.getFA12Transaction(pkh, transactions[i].to, this.microTez.times(transactions[i].amount).toString());
+        fop.contents.push({
+          kind: 'transaction',
+          source: pkh,
+          fee: currentFee,
+          counter: (++counter).toString(),
+          gas_limit: gasLimit,
+          storage_limit: storageLimit,
+          amount: '0',
+          destination: tokenContract,
+          parameters: fa12transfer
+        });
+      } else if (from.slice(0, 2) === 'tz') {
         const transactionOp: any = {
           kind: 'transaction',
           source: from,
@@ -367,9 +381,13 @@ export class OperationService {
       if (applied[0].contents[i].metadata.operation_result.status !== 'applied') {
         console.log('throw error ->');
         if (applied[0].contents[i].metadata.operation_result.errors) {
+          console.log('Error found');
+          console.log(applied[0].contents[i].metadata.operation_result.errors);
+          console.log(JSON.stringify(applied[0].contents[i].metadata.operation_result.errors));
           throw new Error(applied[0].contents[i].metadata.operation_result.errors[0].id); // prevent failed operations
         } else if (applied[0].contents[i].metadata.internal_operation_results &&
           applied[0].contents[i].metadata.internal_operation_results[0].result.errors) {
+            console.log('Alt Error');
           throw new Error(applied[0].contents[i].metadata.internal_operation_results[0].result.errors[0].id);
         } else {
           throw new Error('Uncatched error in preapply');
@@ -960,6 +978,28 @@ export class OperationService {
       { prim: 'UNIT' }, { prim: 'TRANSFER_TOKENS' },
       { prim: 'CONS' }]
     };
+  }
+  getFA12Transaction(from: string, to: string, amount: string) {
+    return {
+      entrypoint: 'transfer',
+      value: {
+        args: [
+          {
+            string: from
+          },{
+            args: [
+              {
+                string: to
+              },{
+                int: amount
+              }
+            ],
+            prim: 'Pair'
+          }
+        ],
+        prim: 'Pair'
+      }
+    }
   }
   getManagerScript(pkh: string) {
     let pkHex: string;

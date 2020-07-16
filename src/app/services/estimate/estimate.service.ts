@@ -39,7 +39,7 @@ export class EstimateService {
       }
     });
   }
-  async estimate(transactions: any, from: string, invoke = false): Promise<any> {
+  async estimate(transactions: any, from: string, tokenContract: string = ''): Promise<any> {
     const extraGas = 80;
     if (!this.hash) { return null; }
     const simulation = {
@@ -48,7 +48,7 @@ export class EstimateService {
       storageLimit: 60000
     };
     for (const tx of transactions) {
-      if (!invoke) {
+      if (!tokenContract) {
         tx.amount = 0.000001;
       }
       tx.gasLimit = simulation.gasLimit;
@@ -56,7 +56,7 @@ export class EstimateService {
     }
     if (this.hash && this.counter && (this.manager || this.manager === null)) {
       const op = this.operationService.createTransactionObject(this.hash, this.counter, this.manager, transactions,
-        this.pkh, this.pk, from, simulation.fee);
+        this.pkh, this.pk, from, simulation.fee, tokenContract);
       const result = await this.simulate(op).toPromise().catch(
         e => {
           console.warn(e);

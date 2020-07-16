@@ -1,4 +1,5 @@
-<button class="purple" (click)="openModal()">Send</button>
+<button *ngIf="!customSend" class="purple" (click)="openModal()">Send</button>
+<span *ngIf="customSend" (click)="openModal()">⇨</span>
 
 <!-- The Modal -->
 <div *ngIf="modalOpen" id="myModal" class="kukai-modal">
@@ -6,9 +7,9 @@
   <div class="km-content">
     <div class="x" (click)="closeModal()"><img src="../../../assets/img/x.svg"></div>
     <div class="km-header">
-      <H1>Send tez</H1>
+      <H1>Send {{getAssetName()}}</H1>
       <!--<span class="close" (click)="modalOpen = false" class="close">&times;</span>-->
-      <button *ngIf="activeView === 0 && !walletService.isLedgerWallet()" class="small multiple-destinations" (click)="toggleDestination()">
+      <button *ngIf="activeView === 0 && !walletService.isLedgerWallet() && !customSend" class="small multiple-destinations" (click)="toggleDestination()">
         <ng-container *ngIf="!this.isMultipleDestinations">Multiple transactions</ng-container>
         <ng-container *ngIf="this.isMultipleDestinations">Single transaction</ng-container>
       </button>
@@ -16,9 +17,9 @@
     <!-- Prepare transaction -->
     <div class="km-body" *ngIf="activeView === 0">
       <div class="amount">
-        <input #amountInput class="input" class="custom-large" placeholder="0.00" [(ngModel)]="amount" (click)="sendMax = false;"
+        <input #amountInput class="input" class="custom-large" placeholder="0.00" [(ngModel)]="amount" (click)="sendMax = false;" (change)="amountChange()"
           [style.font-size.rem]="dynSize()" [style.width.ch]="amount ? amount.length + 1 : 3.6" [disabled]="isMultipleDestinations">
-        <span class="tez">tez</span>
+        <span class="tez">{{getAssetName()}}</span>
       </div>
       <div class="row-group">
         <button *ngIf="!this.isMultipleDestinations" tabindex=-1 class="small" [class.max]="sendMax" (click)="sendEntireBalance($event)">Send Max</button>
@@ -88,7 +89,7 @@
           To — {{ transactions[0].to }}
         </p>
         <p class="preview">
-          Amount — {{ transactions[0].amount | number:'1.0-6' }} tez
+          Amount — {{ transactions[0].amount | number:'1.0-6' }} {{getAssetName()}}
         </p>
         <p class="preview">
           Fee — {{ getTotalFee() | number:'1.0-6' }} tez
