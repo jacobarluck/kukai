@@ -77,7 +77,7 @@
       <span *ngIf="formInvalid" class="danger no-margin">
         {{ formInvalid }}
       </span>
-      <button class="green" (click)="openModal2()">Preview</button>
+      <button style="margin: 2.5rem 0 1.5rem;" class="purple" (click)="openModal2()">Preview</button>
     </div>
     <!-- Confirm transaction -->
     <div class="km-body" *ngIf="activeView === 1">
@@ -132,9 +132,11 @@
       </ng-container>
       <div class="row-group" style="margin: 1.25rem 0 1.5rem;">
         <input *ngIf="!walletService.isLedgerWallet()" [(ngModel)]="password" autocomplete="current-password" placeholder="Password" class="text password" type="password" (input)="this.pwdValid = ''" (change)="this.pwdValid = ''">
-        <button class="retry" [style.display]="(walletService.isLedgerWallet() && ledgerError) ? 'flex' : 'none'" (click)="ledgerRetry()">Retry</button>
-        <button [style.margin-left]="(walletService.isLedgerWallet() && ledgerError) ? '0' : 'auto'" class="green confirm" (click)="inject()" [disabled]="walletService.isLedgerWallet() && (!sendResponse || !sendResponse.payload || !sendResponse.payload.signedOperation)">
+        <button class="retry" *ngIf="walletService.isLedgerWallet() && ledgerError; else elseBlock" (click)="ledgerRetry()">Sign with Ledger</button>
+        <ng-template #elseBlock>
+          <button  class="purple confirm" (click)="inject()" [disabled]="walletService.isLedgerWallet() && (!sendResponse || !sendResponse.payload || !sendResponse.payload.signedOperation)">
           {{ walletService.isLedgerWallet() ? 'Broadcast' : 'Confirm'}}</button>
+        </ng-template>
       </div>
       <span *ngIf="this.pwdValid" class="danger margin">{{ this.pwdValid }}</span>
     </div>
