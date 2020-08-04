@@ -1241,12 +1241,15 @@ export class ErrorHandlingPipe implements PipeTransform {
       id: 'TooHighFee'
     }
   ];
-  transform(errorId: string): any {
+  transform(errorId: string, withObj?: any): any {
     errorId = errorId.replace('006-PsCARTHA', 'alpha');
     let errorMessage = '';
     const index = this.ERROR_LIST.findIndex((s) => s.id === errorId);
     console.log(index);
-    if (index !== -1) {
+    if (errorId === 'proto.alpha.michelson_v1.script_rejected' && withObj && (withObj.string || withObj.args)) {
+      errorMessage = JSON.stringify(withObj);
+      console.log(withObj)
+    } else if (index !== -1) {
       return this.ERROR_LIST[index].msg;
     } else {
       if (

@@ -111,13 +111,13 @@ export class ActivityService {
       }
     }
   }
-  async getAssetContext(key: string, size: number): Promise<any> {
+  async getAssetContext(key: string, size: number, setoff = 0): Promise<any> {
     let net = 'carthagenet'
     if (this.CONSTANTS.NET.NETWORK === 'mainnet') {
       net = 'mainnet';
     }
     if (this.CONSTANTS.NET.ASSETS[key]) {
-      const bigMapId = this.CONSTANTS.NET.ASSETS[key].bigMapId;
+      const bigMapId = this.CONSTANTS.NET.ASSETS[key].bigMapId + setoff;
       const context = await fetch(`https://api.better-call.dev/v1/bigmap/${net}/${bigMapId}/keys?size=${size}`, {}).then(response => {
         return response.json();
       });
@@ -131,8 +131,11 @@ export class ActivityService {
     const implicitAccounts = this.walletService.wallet.getImplicitAccounts();
     const tzBTC = (contractAddress === 'KT1TjdF4H8H2qzxichtEbiCwHxCRM1SVx6B7');
     const tzBadger = (contractAddress === 'KT1VAkwDFNSUWrjic97ivkMzauU7cpb99H74');
+    const tezible = (contractAddress === 'KT1N5DyZPCq3hANzMLuxcx5Xwx2WrWd5f9Uq');
     if (tzBadger) {
       console.log('-------------------- TzBadger ------------------------');
+    } else if (tezible) {
+      console.log('-------------------- Tezible ------------------------');
     }
     let key_strings: string[] = [];
     if (tzBTC) {
@@ -144,8 +147,7 @@ export class ActivityService {
         key_strings.push(`${impAcc.pkh}`);
       }
     }
-    if (this.CONSTANTS.NET.ASSETS[contractAddress].class === 'FA1.2') { // FA1.2
-      // if 
+    if (this.CONSTANTS.NET.ASSETS[contractAddress].tokenStandard === 'FA1.2') { // FA1.2
       for (const entry of context) {
         const index = key_strings.indexOf(entry.data.key_string);
         if (index !== -1) {
@@ -167,12 +169,15 @@ export class ActivityService {
           implicitAccounts[index].updateAssetBalance(contractAddress, balance);
         }
       }
-    } else if (this.CONSTANTS.NET.ASSETS[contractAddress].class === 'FA2') { // FA2
+    } else if (this.CONSTANTS.NET.ASSETS[contractAddress].tokenStandard === 'FA2') { // FA2
+      const val = await this.getAssetContext(contractAddress, 10000, 2);
       console.log('???????????');
       console.log(context);
+      console.log(val);
       for (const entry of context) {
         const childIndex = entry.data.key.children.indexOf(child => child.prim === 'address');
         if (childIndex !== -1) {
+          console.log('Index: ' + childIndex);
           const index = key_strings.indexOf(entry.data.key.children[childIndex].value);
           if (index !== -1) {
             console.log('HIT!');

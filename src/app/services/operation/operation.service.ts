@@ -391,14 +391,18 @@ export class OperationService {
       if (applied[0].contents[i].metadata.operation_result.status !== 'applied') {
         console.log('throw error ->');
         if (applied[0].contents[i].metadata.operation_result.errors) {
-          console.log('Error found');
+          console.log('Error in operation_result');
           console.log(applied[0].contents[i].metadata.operation_result.errors);
           console.log(JSON.stringify(applied[0].contents[i].metadata.operation_result.errors));
-          throw new Error(applied[0].contents[i].metadata.operation_result.errors[0].id); // prevent failed operations
+          throw applied[0].contents[i].metadata.operation_result.errors[
+            applied[0].contents[i].metadata.operation_result.errors.length - 1
+          ];
         } else if (applied[0].contents[i].metadata.internal_operation_results &&
           applied[0].contents[i].metadata.internal_operation_results[0].result.errors) {
-            console.log('Alt Error');
-          throw new Error(applied[0].contents[i].metadata.internal_operation_results[0].result.errors[0].id);
+            console.log('Error in internal_operation_results');
+            throw new Error(applied[0].contents[i].metadata.internal_operation_results[0].result.errors[
+              applied[0].contents[i].metadata.internal_operation_results[0].result.errors.length - 1
+          ]);
         } else {
           throw new Error('Uncatched error in preapply');
         }
@@ -418,10 +422,18 @@ export class OperationService {
       error = error.error[0].error;
     } else if (error.statusText) {
       error = error.statusText;
-    } if (error.message) {
+    } else if (error.message) {
       error = this.errorHandlingPipe.transform(error.message);
+    } else if (error.id) {
+      if (error.with) {
+        error = this.errorHandlingPipe.transform(error.id, error.with);
+      } else {
+        error = this.errorHandlingPipe.transform(error.id);
+      }
     } else {
       console.log('Error not categorized');
+      console.log(JSON.stringify(error));
+      console.log(error);
     }
     return of(
       {
